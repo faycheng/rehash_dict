@@ -20,10 +20,10 @@
 typedef struct dictEntry{
     char *key;
     union{
-        char *string_value;
-        long num_value;
-        double decimal_value;
-        void *object_value;
+	char *string_value;
+	long num_value;
+	double decimal_value;
+	void *object_value;
     }value;
     struct dictEntry *next;
 }dictEntry;
@@ -58,10 +58,10 @@ typedef struct dictIterator{
 
 dict *create_dic(void);
 bool add_dict(dict *d, char *key, int type, ...);
-bool replace_dict_value(dict *d, char *key, void *value);
-void *fetch_dict_value(dict *d, char *key);
-bool delete_dict(dict *d, char *key);
-void release_dict(dict *d);
+bool replace_dict_value(dict *d, char *key, int type, ...);
+bool fetch_dict_value(dict *d, char *key, int type, ...);
+bool delete_dict_key(dict *d, char *key, int type);
+bool release_dict(dict *d);
 bool single_rehash_dict(dict *d);
 bool exist_key(dict *d, char *key);
 
