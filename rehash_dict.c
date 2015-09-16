@@ -42,6 +42,8 @@ typedef struct dictIterator{
 dict *create_dic(void)
 {
     dict *d = NULL;
+    int count = 0;
+
     d = (dict *)calloc(1, sizeof(dict));
 
     d->hash_table[0].table = NULL;
@@ -55,32 +57,68 @@ dict *create_dic(void)
 
     d->rehash_index = -1;
     d->iterators = 0;
+    d->hash_table[0].table = (dictEntry **)calloc(DICT_HT_INIT_SIZE, sizeof(dictEntry *));
+    for (count = 0; count < DICT_HT_INIT_SIZE; count ++)
+    {
+        d->hash_table[0].table[count] = NULL;
+    }
+    d->hash_table[0].size = DICT_HT_INIT_SIZE;
+    d->hash_table[0].size_mask = DICT_HT_INIT_SIZE - 1;
     return d;
 }
 
-bool add_dict(dict *d, char *key, void *value)
+bool add_dict(dict *d, char *key, int type, ...)
 {
     uint32_t key_index = 0;
     int count = 0;
     dictEntry *de = NULL;
+    va_list value_ptr;
+    va_start(value_ptr, type);
     if (d->rehash_index != -1)
     {
         single_rehash_dict(d);
     }
     if (d->rehash_index == -1)
     {
-        if(d->hash_table[0].size <= d->hash_table[0].used + 1)
+        if(d->hash_table[0].size <= d->hash_table[0].used )
         {
-            d->hash_table[1].table = (dict *)calloc(growth_size(d->hash_table[1].used + 1), sizeof(dict));
+            d->hash_table[1].table = (dictEntry **)calloc(growth_size(d->hash_table[0].used ), sizeof(dictEntry *));
             for (count = 0; count < growth_size(d->hash_table[1].used + 1); count ++)
             {
-                d->hash_table[1].table[count].next = NULL;
+                d->hash_table[1].table[count] = NULL;
             }
-            d->hash_table[1].size = growth_size(d->hash_table[1].used + 1);
+            d->hash_table[1].size = growth_size(d->hash_table[0].used);
             d->hash_table[1].size_mask = d->hash_table[1].size - 1;
             d->hash_table[1].used = 0;
             d->rehash_index = 0;
-            add_dict(d, key, value);
+            switch (type) {
+            case INTTYPE:
+            {
+                add_dict(d, key, type, va_arg(value_ptr, long));
+            }
+                break;
+            case DECIMALTYPE:
+            {
+                add_dict(d, key, type, va_arg(value_ptr, double));
+            }
+                break;
+            case STRINGTYPE:
+            {
+                add_dict(d, key, type, va_arg(value_ptr, char *));
+            }
+                break;
+            case OBJECTTYPE:
+            {
+                add_dict(d, key, type, va_arg(value_ptr, void *));
+            }
+                break;
+            default:
+            {
+                printf("value type is error.\n");
+                return false;
+            }
+                break;
+            }
         }
         else
         {
@@ -92,12 +130,38 @@ bool add_dict(dict *d, char *key, void *value)
             key_index = murmurhash(key, (uint32_t )strlen(key), MMHASH_SEED);
             key_index = key_index & d->hash_table[0].size_mask;
             de = (dictEntry *)calloc(1, sizeof(dictEntry));
-            de->key = (void *)key;
-            de->value = value;
-            de->next = d->hash_table[0].table[key_index].next;
-            d->hash_table[0].table[key_index].next = de;
+            de->key = key;
+            switch (type) {
+            case INTTYPE:
+            {
+                de->value.num_value = va_arg(value_ptr, long);
+            }
+                break;
+            case DECIMALTYPE:
+            {
+                de->value.decimal_value = va_arg(value_ptr, double);
+            }
+                break;
+            case STRINGTYPE:
+            {
+                de->value.string_value = va_arg(value_ptr, char *);
+            }
+                break;
+            case OBJECTTYPE:
+            {
+                de->value.object_value = va_arg(value_ptr, void *);
+            }
+                break;
+            default:
+            {
+                printf("value type is error.\n");
+                return false;
+            }
+                break;
+            }
+            de->next = d->hash_table[0].table[key_index];
+            d->hash_table[0].table[key_index] = de;
             d->hash_table[0].used++;
-            //free(de);                         ??????????????????
             de = NULL;
         }
     }
@@ -112,11 +176,37 @@ bool add_dict(dict *d, char *key, void *value)
         key_index = key_index & d->hash_table[1].size_mask;
         de = (dictEntry *)calloc(1, sizeof(dictEntry));
         de->key = (void *)key;
-        de->value = value;
-        de->next = d->hash_table[1].table[key_index].next;
-        d->hash_table[1].table[key_index].next = de;
+        switch (type) {
+        case INTTYPE:
+        {
+            de->value.num_value = va_arg(value_ptr, long);
+        }
+            break;
+        case DECIMALTYPE:
+        {
+            de->value.decimal_value = va_arg(value_ptr, long double);
+        }
+            break;
+        case STRINGTYPE:
+        {
+            de->value.string_value = va_arg(value_ptr, char *);
+        }
+            break;
+        case OBJECTTYPE:
+        {
+            de->value.object_value = va_arg(value_ptr, void *);
+        }
+            break;
+        default:
+        {
+            printf("value type is error.\n");
+            return false;
+        }
+            break;
+        }
+        de->next = d->hash_table[0].table[key_index];
+        d->hash_table[0].table[key_index] = de;
         d->hash_table[1].used++;
-        //free(de);
         de = NULL;
     }
     return true;
@@ -141,7 +231,7 @@ bool exist_key(dict *d, char *key)
 
     key_index = murmurhash(key,  (uint32_t) strlen(key), MMHASH_SEED);
     key_index = key_index & d->hash_table[0].size_mask;
-    head = d->hash_table[0].table[key_index].next;
+    head = d->hash_table[0].table[key_index];
     while(head)
     {
         if(strcmp(key, head->key) == 0)
@@ -154,7 +244,7 @@ bool exist_key(dict *d, char *key)
     {
         key_index = murmurhash(key,  (uint32_t) strlen(key), MMHASH_SEED);
         key_index = key_index & d->hash_table[1].size_mask;
-        head = d->hash_table[0].table[key_index].next;
+        head = d->hash_table[0].table[key_index];
         while(head)
         {
             if(strcmp(key, head->key) == 0)
@@ -176,7 +266,7 @@ bool single_rehash_dict(dict *d)
 
     for (; dict_entry_index < d->hash_table[0].size; dict_entry_index++)
     {
-        head = d->hash_table[0].table[dict_entry_index].next;
+        head = d->hash_table[0].table[dict_entry_index];
         if (head == NULL)
         {
             continue;
@@ -185,25 +275,24 @@ bool single_rehash_dict(dict *d)
         {
             key_index = murmurhash(head->key, (uint32_t)strlen(head->key), MMHASH_SEED);
             key_index = d->hash_table[1].size_mask & key_index;
-            d->hash_table[1].table[key_index] = *head;
+            d->hash_table[1].table[key_index] = head;
             d->hash_table[1].used++;
-            d->hash_table[0].used--;
             d->rehash_index++;
-            while(head->next)
-            {
-                tail = head->next;
-                while(tail->next)
-                {
-                    tail = tail->next;
-                }
-                free(tail);
-                tail = NULL;
-            }
+//            while(head->next)
+//            {
+//                tail = head->next;
+//                while(tail->next)
+//                {
+//                    tail = tail->next;
+//                }
+//                free(tail);
+//                tail = NULL;
+//            }
 
             break;
         }
     }
-    if(d->rehash_index == d->hash_table[0].size)
+    if(d->rehash_index == d->hash_table[0].used)
     {
         free(d->hash_table[0].table);
         d->hash_table[0].table = NULL;

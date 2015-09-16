@@ -6,15 +6,25 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include "murmurhash.h"
 
 #define DICT_HT_INIT_SIZE 4
 #define MMHASH_SEED 1024
+#define INTTYPE 0
+#define DECIMALTYPE 1
+#define STRINGTYPE 2
+#define OBJECTTYPE 3
 
 typedef struct dictEntry{
     char *key;
-    void *value;
+    union{
+        char *string_value;
+        long num_value;
+        double decimal_value;
+        void *object_value;
+    }value;
     struct dictEntry *next;
 }dictEntry;
 
@@ -28,7 +38,7 @@ typedef struct dictType{
 }dictType;
 
 typedef struct dictHT{
-    dictEntry *table;
+    dictEntry **table;
     unsigned long size;
     unsigned long size_mask;
     unsigned long used;
@@ -47,7 +57,7 @@ typedef struct dictIterator{
 }dictIterator;
 
 dict *create_dic(void);
-bool add_dict(dict *d, char *key, void *value);
+bool add_dict(dict *d, char *key, int type, ...);
 bool replace_dict_value(dict *d, char *key, void *value);
 void *fetch_dict_value(dict *d, char *key);
 bool delete_dict(dict *d, char *key);
