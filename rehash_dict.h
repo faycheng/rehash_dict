@@ -17,9 +17,11 @@
 #define STRINGTYPE 2
 #define OBJECTTYPE 3
 
+
 typedef struct dictEntry{
     char *key;
-    union{
+    int value_type;
+    union {
 	char *string_value;
 	long num_value;
 	double decimal_value;

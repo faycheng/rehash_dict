@@ -142,23 +142,27 @@ bool add_dict(dict *d, char *key, int type, ...)
 	    switch (type) {
 	    case INTTYPE:
 	    {
-		de->value.num_value = va_arg(value_ptr, long);
+		    de->value_type = INTTYPE;
+		    de->value.num_value = va_arg(value_ptr, long);
 	    }
 		break;
 	    case DECIMALTYPE:
 	    {
-		de->value.decimal_value = va_arg(value_ptr, double);
+		    de->value_type = DECIMALTYPE;
+		    de->value.decimal_value = va_arg(value_ptr, double);
 	    }
 		break;
 	    case STRINGTYPE:
 	    {
+		    de->value_type = STRINGTYPE;
 		    string_value_ptr = va_arg(value_ptr, char *);
-		    de->value.string_value = (char *)calloc (strlen(string_value_ptr), sizeof(char));
+		    de->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
 		    memcpy(de->value.string_value, string_value_ptr, strlen(string_value_ptr));
 	    }
 		break;
 	    case OBJECTTYPE:
 	    {
+		    de->value_type = OBJECTTYPE;
 		    de->value.object_value = va_arg(value_ptr, void *);
 	    }
 		break;
@@ -172,7 +176,6 @@ bool add_dict(dict *d, char *key, int type, ...)
 	    de->next = d->hash_table[0].table[key_index];
 	    d->hash_table[0].table[key_index] = de;
             d->hash_table[0].used++;
-            de = NULL;
         }
     }
     else
@@ -190,24 +193,28 @@ bool add_dict(dict *d, char *key, int type, ...)
 	switch (type) {
 	case INTTYPE:
 	{
-	    de->value.num_value = va_arg(value_ptr, long);
+		de->value_type = INTTYPE;
+		de->value.num_value = va_arg(value_ptr, long);
 	}
 	    break;
 	case DECIMALTYPE:
 	{
-	    de->value.decimal_value = va_arg(value_ptr, long double);
+		de->value_type = DECIMALTYPE;
+		de->value.decimal_value = va_arg(value_ptr, long double);
 	}
 	    break;
 	case STRINGTYPE:
 	{
+		de->value_type = STRINGTYPE;
 		string_value_ptr = va_arg(value_ptr, char *);
-		de->value.string_value = (char *)calloc (strlen(string_value_ptr), sizeof(char));
+		de->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
 		memcpy(de->value.string_value, string_value_ptr, strlen(string_value_ptr));
 	}
 	    break;
 	case OBJECTTYPE:
 	{
-	    de->value.object_value = va_arg(value_ptr, void *);
+		de->value_type = OBJECTTYPE;
+		de->value.object_value = va_arg(value_ptr, void *);
 	    //can't delete value
 	}
 	    break;
@@ -221,7 +228,6 @@ bool add_dict(dict *d, char *key, int type, ...)
 	de->next = d->hash_table[1].table[key_index];
 	d->hash_table[1].table[key_index] = de;
 	d->hash_table[1].used++;
-        de = NULL;
     }
     return true;
 }
@@ -262,7 +268,7 @@ bool replace_dict_value(dict *d, char *key, int type, ...)
 			case STRINGTYPE:
 			{
 				string_value_ptr = va_arg(arg_ptr, char *);
-				head->value.string_value = (char *)calloc (strlen(string_value_ptr), sizeof(char));
+				head->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
 				memcpy(head->value.string_value, string_value_ptr, strlen(string_value_ptr));
 				return true;
 			}
@@ -309,7 +315,7 @@ bool replace_dict_value(dict *d, char *key, int type, ...)
 				case STRINGTYPE:
 				{
 					string_value_ptr = va_arg(arg_ptr, char *);
-					head->value.string_value = (char *)calloc (strlen(string_value_ptr), sizeof(char));
+					head->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
 					memcpy(head->value.string_value, string_value_ptr, strlen(string_value_ptr));
 					return true;
 				}
@@ -527,7 +533,6 @@ bool delete_dict_key(dict *d, char *key, int type)
 		}
 		    break;
 		}
-		return true;
 	}
 	else if (head == NULL && strcmp(key, pre->key) != 0)
 	{
@@ -649,8 +654,6 @@ bool delete_dict_key(dict *d, char *key, int type)
 			}
 			    break;
 			}
-
-			return true;
 		}
 		else if (head == NULL && strcmp(key, pre->key) != 0)
 		{
@@ -743,19 +746,86 @@ bool release_dict(dict *d)
 			}
 			if (head->next == NULL)
 			{
+				free(d->hash_table[0].table[count]->key);
+				d->hash_table[0].table[count]->key = NULL;
+				if (d->hash_table[0].table[count]->value_type == STRINGTYPE)
+				{
+					free(d->hash_table[0].table[count]->value.string_value);
+					d->hash_table[0].table[count]->value.string_value = NULL;
+				}
 				free(d->hash_table[0].table[count] );
 				d->hash_table[0].table[count] = NULL;
+				d->hash_table[0].used --;
 				break;
 			}
 			pre->next = NULL;
 			free(tail->key);
 			tail->key = NULL;
-			free(tail->value.string_value);
-			tail->value.string_value = NULL;
+			if (tail->value_type == STRINGTYPE)
+			{
+				free(tail->value.string_value);
+				tail->value.string_value = NULL;
+			}
 			free(tail);
 			tail = NULL;
+			d->hash_table[0].used --;
 		}
 	}
+
+	free(d->hash_table[0].table);
+	d->hash_table[0].table = NULL;
+
+	if (d->rehash_index != -1)
+	{
+		for (count = 0; count < d->hash_table[1].size; count ++)
+		{
+			head = d->hash_table[1].table[count];
+			while (head)
+			{
+				tail = head;
+				while(tail->next)
+				{
+					if (tail->next->next == NULL)
+					{
+						pre = tail;
+					}
+					tail = tail->next;
+				}
+				if (head->next == NULL)
+				{
+					free(d->hash_table[1].table[count]->key);
+					d->hash_table[1].table[count]->key = NULL;
+					if (d->hash_table[1].table[count]->value_type == STRINGTYPE)
+					{
+						free(d->hash_table[1].table[count]->value.string_value);
+						d->hash_table[1].table[count]->value.string_value = NULL;
+					}
+					free(d->hash_table[1].table[count] );
+					d->hash_table[1].table[count] = NULL;
+					d->hash_table[1].used --;
+					break;
+				}
+				pre->next = NULL;
+				free(tail->key);
+				tail->key = NULL;
+				if (tail->value_type == STRINGTYPE)
+				{
+					free(tail->value.string_value);
+					tail->value.string_value = NULL;
+				}
+				free(tail);
+				tail = NULL;
+				d->hash_table[1].used --;
+			}
+		}
+
+		free(d->hash_table[1].table);
+		d->hash_table[1].table = NULL;
+
+	}
+	free(d);
+	d == NULL;
+
 	return true;
 }
 
@@ -798,6 +868,7 @@ bool single_rehash_dict(dict *d)
     dictEntry *head = NULL;
     dictEntry *tail = NULL;
     int dict_entry_index = 0;
+    int count = 0;
     uint32_t key_index = 0;
 
     for (; dict_entry_index < d->hash_table[0].size; dict_entry_index++)
@@ -812,6 +883,7 @@ bool single_rehash_dict(dict *d)
             key_index = murmurhash(head->key, (uint32_t)strlen(head->key), MMHASH_SEED);
             key_index = d->hash_table[1].size_mask & key_index;
 	    d->hash_table[1].table[key_index] = head;
+	    d->hash_table[0].table[dict_entry_index] = NULL;
             d->hash_table[1].used++;
             d->rehash_index++;
 //            while(head->next)
@@ -832,10 +904,23 @@ bool single_rehash_dict(dict *d)
     {
         free(d->hash_table[0].table);
         d->hash_table[0].table = NULL;
-        d->hash_table[0].table = d->hash_table[1].table;
+	d->hash_table[0].table = (dictEntry **)calloc(d->hash_table[1].size, sizeof(dictEntry*));
+	for (count = 0; count < d->hash_table[1].size; count ++)
+	{
+		if (d->hash_table[1].table[count] == NULL)
+		{
+			d->hash_table[0].table[count] = NULL;
+		}
+		else
+		{
+			d->hash_table[0].table[count] = d->hash_table[1].table[count];
+		}
+	}
+	//d->hash_table[0].table = d->hash_table[1].table;
         d->hash_table[0].size = d->hash_table[1].size;
         d->hash_table[0].size_mask = d->hash_table[1].size_mask;
         d->hash_table[0].used = d->hash_table[1].used;
+	free(d->hash_table[1].table);
         d->hash_table[1].table = NULL;
         d->hash_table[1].size = 0;
         d->hash_table[1].size_mask = 0;

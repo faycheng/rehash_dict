@@ -15,8 +15,8 @@ int main(void)
     char *value = NULL;
     long count = 0;
 
-    while (1)
-    {
+//    while (1)
+//    {
 	    value = (char *)calloc(100, sizeof(char));
 	    d = create_dic();
 	    add_dict(d, s1, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
@@ -46,14 +46,14 @@ int main(void)
 //	    {
 //		    printf("value:%s\n", value);
 //	    }
-	    if(delete_dict_key(d, "key", STRINGTYPE) == true)
-	    {
-		    printf("delete key success.\n");
-	    }
-	    else
-	    {
-		    printf("delete key failed.\n");
-	    }
+//	    if(delete_dict_key(d, "key", STRINGTYPE) == true)
+//	    {
+//		    printf("delete key success.\n");
+//	    }
+//	    else
+//	    {
+//		    printf("delete key failed.\n");
+//	    }
 	    if(release_dict(d) == true)
 	    {
 		    printf("release dict  success.\n");
@@ -62,10 +62,10 @@ int main(void)
 	    {
 		    printf("release dict  failed.\n");
 	    }
-	    printf("count:%ld\n", count++);
-	    usleep(1000);
-	    fflush(stdout);
-    }
+//	    printf("count:%ld\n", count++);
+//	    usleep(1000);
+//	    fflush(stdout);
+//    }
 
 
 
