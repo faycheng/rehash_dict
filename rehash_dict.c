@@ -456,6 +456,47 @@ bool fetch_dict_value(dict *d, char *key, int type, ...)
 	return false;
 }
 
+
+dictEntry *fetch_dictEntry(dict *d, char *key)
+{
+	dictEntry *head = NULL;
+	uint32_t key_index = 0;
+
+	if (exist_key(d, key) == false)
+	{
+		printf("Key is not exist.\n");
+		return false;
+	}
+	key_index = murmurhash(key, (uint32_t)strlen(key), MMHASH_SEED);
+	key_index = key_index & d->hash_table[0].size_mask;
+	head = d->hash_table[0].table[key_index];
+	while(head)
+	{
+		if(strcmp(key, head->key) == 0)
+		{
+			return head;
+		}
+		head = head->next;
+	}
+	if(d->rehash_index != -1)
+	{
+		key_index = murmurhash(key, (uint32_t)strlen(key), MMHASH_SEED);
+		key_index = key_index & d->hash_table[1].size_mask;
+		head = d->hash_table[1].table[key_index];
+		while(head)
+		{
+			if(strcmp(key, head->key) == 0)
+			{
+				return head;
+			}
+			head = head->next;
+		}
+	}
+	return NULL;
+
+
+}
+
 int growth_size(int used)
 {
     int size = 0;
