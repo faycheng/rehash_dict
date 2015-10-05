@@ -2,70 +2,58 @@
 #include "rehash_dict.h"
 #include <time.h>
 
+
 int main(void)
 {
     dict *d = NULL;
-    char *s1 = "key1";
-    char *s2 = "key2";
-    char *s3 = "key3";
-    char *s4 = "key4";
-    char *s5 = "key5";
-    char *s6 = "key3";
-    char *s7 = "key6";
-    char *value = NULL;
     long count = 0;
+    int index = 0;
+    d = create_dic();
 
-   while (1)
+   while(count < 2000)
    {
-	    value = (char *)calloc(100, sizeof(char));
-	    d = create_dic();
-//	    add_dict(d, s1, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s2, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
+	   time_t time_seed;
+	   time(&time_seed);
+	   srand((unsigned)time_seed);
+	   char *key  = NULL;
+	   key = (char *)calloc(16, sizeof(char));
+	   strcat(key, "key");
+	   char *key_index =  NULL;
+	   key_index = (char *)calloc(16, sizeof(char));
+	   sprintf(key_index, "%ld", rand()%10);
+	   strcat(key, key_index);
+	   if (d->hash_table[0].used == 10)
+	   {
+		   printf("stop\n");
+	   }
+	   if (add_dict(d, key, STRINGTYPE, key) == false)
+	   {
+		   printf("add dict error.key:%s\n", key);
+		   sleep(1);
+		   continue;
+	   }
+	   printf("count:%ld\tsize:%d\t\t\tkey:%s\n", count++, d->hash_table[0].used, key);
+	   for (index = 0; index < d->hash_table[0].size; index ++)
+	   {
+		   if (d->hash_table[0].table[index] != NULL)
+		   {
+			   dictEntry *tm = d->hash_table[0].table[index];
+			   while(tm)
+			   {
+				   printf("######index:%d\tkey:%s\n", index, tm->key);
+				   tm = tm->next;
+			   }
+		   }
+	   }
+	   free(key);
+	   free(key_index);
+	   key = NULL;
+	   key_index = NULL;
 
-//	    add_dict(d, s4, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s5, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s6, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s7, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s4, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s5, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s6, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s4, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s5, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-//	    add_dict(d, s6, 2, "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
-	    add_dict(d, s3, 1, 1.23456);
-//	    if (fetch_dict_value(d, "key5", STRINGTYPE, value) == true)
-//	    {
-//		    printf("value:%s\n", value);
-//	    }
-	    free(value);
-	    value = NULL;
-	    printf("dic value:%lf\n", fetch_dictEntry(d, "key3")->value.decimal_value);
-
-//	    if (replace_dict_value(d, "key5", STRINGTYPE, "hello redis dict") == true)
-//	    {
-//		    printf("replace value success.\n");
-//	    }
-//	    if(delete_dict_key(d, "key", STRINGTYPE) == true)
-//	    {
-//		    printf("delete key success.\n");
-//	    }
-//	    else
-//	    {
-//		    printf("delete key failed.\n");
-//	    }
-	    if(release_dict(d) == true)
-	    {
-		    printf("release dict  success.\n");
-	    }
-	    else
-	    {
-		    printf("release dict  failed.\n");
-	    }
-	    printf("count:%ld\n", count++);
-	    break;
-	    sleep(10000);
-	    fflush(stdout);
+	   sleep(1);
     }
+   printf("key97:%s\n", fetch_dictEntry(d, "key97")->value.string_value);
+   sleep(10);
 
 
 

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "murmurhash.h"
 
 //demo:
@@ -85,4 +86,14 @@ murmurhash (const char *key, uint32_t len, uint32_t seed) {
   h ^= (h >> 16);
 
   return h;
+}
+
+char *murmurhash_str(const char *origin_str)
+{
+	uint32_t mmh = 0;
+	char *mmh_str;
+	mmh_str  = (char *)calloc(32, sizeof(char));
+	mmh = murmurhash(origin_str, (uint32_t )strlen(origin_str), 1024);
+	sprintf(mmh_str, "%ld", (long)mmh);
+	return mmh_str;
 }

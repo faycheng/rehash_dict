@@ -30,20 +30,12 @@ typedef struct dictEntry{
     struct dictEntry *next;
 }dictEntry;
 
-typedef struct dictType{
-    unsigned int (*murmur_hash)(void *key);
-    void *(*key_copy)(void *private_data, void *key);
-    void *(*value_copy)(void *private_data, void *obj);  //obj ???
-    int (*key_compare)(void *private_data, void *key1, void *key2);
-    void (*key_destory)(void *private_data, void *key);
-    void (*value_destory)(void *private_data, void *obj);
-}dictType;
 
 typedef struct dictHT{
     dictEntry **table;
-    unsigned long size;
-    unsigned long size_mask;
-    unsigned long used;
+    int size;
+    int size_mask;
+    int used;
 }dictHT;
 
 typedef struct dict {

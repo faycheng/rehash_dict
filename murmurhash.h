@@ -24,6 +24,7 @@ extern "C" {
 uint32_t
 murmurhash (const char *, uint32_t, uint32_t);
 
+char *murmurhash_str(const char *origin_str);
 #ifdef __cplusplus
 }
 #endif
