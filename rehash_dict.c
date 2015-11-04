@@ -345,12 +345,33 @@ bool delete_dict_key(dict *d, char *key, int type)
 	if (head == NULL && strcmp(key, pre->key) == 0)
 	{
 		switch (type) {
+		case BOOL_FALSE:
+		{
+			free(pre->key);
+			pre->key = NULL;
+			free(pre);
+			pre = NULL;
+			d->hash_table[0].table[key_index] = NULL;
+			return true;
+		}
+		    break;
+		case BOOL_TRUE:
+		{
+			free(pre->key);
+			pre->key = NULL;
+			free(pre);
+			pre = NULL;
+			d->hash_table[0].table[key_index] = NULL;
+			return true;
+		}
+		    break;
 		case INTTYPE:
 		{
 			free(pre->key);
 			pre->key = NULL;
 			free(pre);
 			pre = NULL;
+			d->hash_table[0].table[key_index] = NULL;
 			return true;
 		}
 		    break;
@@ -360,6 +381,7 @@ bool delete_dict_key(dict *d, char *key, int type)
 			pre->key = NULL;
 			free(pre);
 			pre = NULL;
+			d->hash_table[0].table[key_index] = NULL;
 			return true;
 		}
 		    break;
@@ -371,6 +393,7 @@ bool delete_dict_key(dict *d, char *key, int type)
 			pre->key = NULL;
 			free(pre);
 			pre = NULL;
+			d->hash_table[0].table[key_index] = NULL;
 			return true;
 		}
 		    break;
@@ -382,6 +405,7 @@ bool delete_dict_key(dict *d, char *key, int type)
 			pre->key = NULL;
 			free(pre);
 			pre = NULL;
+			d->hash_table[0].table[key_index] = NULL;
 			return true;
 		}
 		    break;
@@ -403,6 +427,26 @@ bool delete_dict_key(dict *d, char *key, int type)
 		if(strcmp(key, head->key) == 0)
 		{
 			switch (type) {
+			case BOOL_FALSE:
+			{
+				pre->next = head->next;
+				free(head->key);
+				head->key = NULL;
+				free(head);
+				head = NULL;
+				return true;
+			}
+			    break;
+			case BOOL_TRUE:
+			{
+				pre->next = head->next;
+				free(head->key);
+				head->key = NULL;
+				free(head);
+				head = NULL;
+				return true;
+			}
+			    break;
 			case INTTYPE:
 			{
 				pre->next = head->next;

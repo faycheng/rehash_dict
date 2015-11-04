@@ -34,6 +34,18 @@ int main(void)
 	    exit(0);
     }
     print_dict(d);
+    if (delete_dict_key(d, "key_double", DECIMALTYPE) == false)
+    {
+	    printf("delete dict key failed.\n");
+	    exit(0);
+    }
+    print_dict(d);
+    if (delete_dict_key(d, "key_false", BOOL_FALSE) == false)
+    {
+	    printf("delete dict key failed.\n");
+	    exit(0);
+    }
+    print_dict(d);
     release_dict(d);
 
 
