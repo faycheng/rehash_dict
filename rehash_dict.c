@@ -5,7 +5,11 @@ dict *create_dic(void)
     dict *d = NULL;
     int count = 0;
 
-    d = (dict *)calloc(1, sizeof(dict));
+    d = (dict *)calloc(1, sizeof(dict));\
+    if (!d)
+    {
+	    return NULL;
+    }
 
     d->hash_table[0].table = NULL;
     d->hash_table[0].size = 0;
@@ -19,9 +23,13 @@ dict *create_dic(void)
     d->rehash_index = -1;
     d->iterators = 0;
     d->hash_table[0].table = (dictEntry **)calloc(DICT_HT_INIT_SIZE, sizeof(dictEntry *));
+    if (!d->hash_table[0].table)
+    {
+	    return NULL;
+    }
     for (count = 0; count < DICT_HT_INIT_SIZE; count ++)
     {
-	d->hash_table[0].table[count] = NULL;
+	    d->hash_table[0].table[count] = NULL;
     }
     d->hash_table[0].size = DICT_HT_INIT_SIZE;
     d->hash_table[0].size_mask = DICT_HT_INIT_SIZE - 1;
@@ -44,14 +52,18 @@ bool add_dict(dict *d, char *key, int type, ...)
     }
     if (exist_key(d, key) == true)
     {
-	printf("Exist a same key.\n");
-	return false;
+	    printf("Exist a same key.\n");
+	    return false;
     }
     if (d->rehash_index == -1)
     {
 	if(d->hash_table[0].size <= d->hash_table[0].used )
 	{
 	    d->hash_table[1].table = (dictEntry **)calloc(growth_size(d->hash_table[0].used ), sizeof(dictEntry *));
+	    if (!d->hash_table[1].table)
+	    {
+		    return false;
+	    }
 	    for (count = 0; count < growth_size(d->hash_table[0].used); count ++)
 	    {
 		d->hash_table[1].table[count] = NULL;                           //pointer
@@ -105,7 +117,15 @@ bool add_dict(dict *d, char *key, int type, ...)
 	    key_index = murmurhash(key, (uint32_t )strlen(key), MMHASH_SEED);
 	    key_index = key_index & d->hash_table[0].size_mask;
 	    de = (dictEntry *)calloc(1, sizeof(dictEntry));
+	    if (!de)
+	    {
+		    return false;
+	    }
 	    de->key = (char *)calloc(strlen(key) + 1, sizeof(char));
+	    if (!de->key)
+	    {
+		    return false;
+	    }
 	    memcpy(de->key, key, strlen(key));
 	    switch (type) {
 	    case BOOL_FALSE:
@@ -137,6 +157,10 @@ bool add_dict(dict *d, char *key, int type, ...)
 		    de->value_type = STRINGTYPE;
 		    string_value_ptr = va_arg(value_ptr, char *);
 		    de->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
+		    if (!de->value.string_value)
+		    {
+			    return false;
+		    }
 		    memcpy(de->value.string_value, string_value_ptr, strlen(string_value_ptr));
 	    }
 		break;
@@ -157,56 +181,6 @@ bool add_dict(dict *d, char *key, int type, ...)
 	    d->hash_table[0].table[key_index] = de;
 	    d->hash_table[0].used++;
 	}
-    }
-    if (exist_key(d, key) == false)
-    {
-	    if (d->rehash_index != -1)
-	    {
-		key_index = murmurhash(key, (uint32_t )strlen(key), MMHASH_SEED);
-		key_index = key_index & d->hash_table[1].size_mask;
-		de = (dictEntry *)calloc(1, sizeof(dictEntry));
-		de->key = (char *)calloc(strlen(key) + 1, sizeof(char));
-		memcpy(de->key, key, strlen(key));
-		switch (type) {
-		case INTTYPE:
-		{
-			de->value_type = INTTYPE;
-			de->value.num_value = va_arg(value_ptr, long);
-		}
-		    break;
-		case DECIMALTYPE:
-		{
-			de->value_type = DECIMALTYPE;
-			de->value.decimal_value = va_arg(value_ptr, double);
-		}
-		    break;
-		case STRINGTYPE:
-		{
-			de->value_type = STRINGTYPE;
-			string_value_ptr = va_arg(value_ptr, char *);
-			de->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
-			memcpy(de->value.string_value, string_value_ptr, strlen(string_value_ptr));
-		}
-		    break;
-		case OBJECTTYPE:
-		{
-			de->value_type = OBJECTTYPE;
-			de->value.object_value = va_arg(value_ptr, void *);
-		    //can't delete value
-		}
-		    break;
-		default:
-		{
-		    printf("value type is error.\n");
-		    return false;
-		}
-		    break;
-		}
-		de->next = d->hash_table[1].table[key_index];
-		d->hash_table[1].table[key_index] = de;
-		d->hash_table[1].used++;
-	    }
-
     }
 
     return true;
@@ -249,6 +223,10 @@ bool replace_dict_value(dict *d, char *key, int type, ...)
 			{
 				string_value_ptr = va_arg(arg_ptr, char *);
 				head->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
+				if (!head->value.string_value)
+				{
+					return false;
+				}
 				memcpy(head->value.string_value, string_value_ptr, strlen(string_value_ptr));
 				return true;
 			}
@@ -269,54 +247,6 @@ bool replace_dict_value(dict *d, char *key, int type, ...)
 			}
 		}
 		head = head->next;
-	}
-	if(d->rehash_index != -1)
-	{
-		key_index = murmurhash(key, (uint32_t)strlen(key), MMHASH_SEED);
-		key_index = key_index & d->hash_table[1].size_mask;
-		head = d->hash_table[1].table[key_index];
-		while(head)
-		{
-			if(strcmp(key, head->key) == 0)
-			{
-				switch (type) {
-				case INTTYPE:
-				{
-					head->value.num_value =va_arg(arg_ptr, long) ;
-					return true;
-				}
-				    break;
-				case DECIMALTYPE:
-				{
-					head->value.decimal_value =va_arg(arg_ptr, double) ;
-					return true;
-				}
-				    break;
-				case STRINGTYPE:
-				{
-					string_value_ptr = va_arg(arg_ptr, char *);
-					head->value.string_value = (char *)calloc (strlen(string_value_ptr) + 1, sizeof(char));
-					memcpy(head->value.string_value, string_value_ptr, strlen(string_value_ptr));
-					return true;
-				}
-				    break;
-				case OBJECTTYPE:
-				{
-					head->value.object_value = va_arg(arg_ptr, void *);
-					//can't delete value
-					return true;
-				}
-				    break;
-				default:
-				{
-				    printf("value type is error.\n");
-				    return false;
-				}
-				    break;
-				}
-			}
-			head = head->next;
-		}
 	}
 	return false;
 
@@ -383,67 +313,18 @@ bool fetch_dict_value(dict *d, char *key, int type, ...)
 		}
 		head = head->next;
 	}
-	if(d->rehash_index != -1)
-	{
-		key_index = murmurhash(key, (uint32_t)strlen(key), MMHASH_SEED);
-		key_index = key_index & d->hash_table[1].size_mask;
-		head = d->hash_table[1].table[key_index];
-		while(head)
-		{
-			if(strcmp(key, head->key) == 0)
-			{
-				switch (type) {
-				case INTTYPE:
-				{
-					long_value = va_arg(arg_ptr, long *);
-					*long_value = head->value.num_value;
-					return true;
-				}
-				    break;
-				case DECIMALTYPE:
-				{
-					double_value = va_arg(arg_ptr, double *);
-					*double_value = head->value.decimal_value;
-					return true;
-				}
-				    break;
-				case STRINGTYPE:
-				{
-					string_value = va_arg(arg_ptr, char *);
-					memcpy(string_value, head->value.string_value, strlen(head->value.string_value));
-					return true;
-				}
-				    break;
-				case OBJECTTYPE:
-				{
-					object_value = va_arg(arg_ptr, void *);
-					object_value = head->value.object_value;
-					return true;       //can't delete d
-				}
-				    break;
-				default:
-				{
-				    printf("value type is error.\n");
-				    return false;
-				}
-				    break;
-				}
-			}
-			head = head->next;
-		}
-	}
 	return false;
 }
 
 int growth_size(int used)
 {
-    int base_number = 1;
+	int base_number = 1;
 
-    while(used * 2 > base_number )
-    {
+	while(used * 2 > base_number )
+	{
 	base_number = base_number *2;
-    }
-    return base_number;
+	}
+	return base_number;
 }
 
 bool delete_dict_key(dict *d, char *key, int type)
@@ -452,10 +333,6 @@ bool delete_dict_key(dict *d, char *key, int type)
 	dictEntry *pre = NULL;
 	uint32_t key_index = 0;
 
-//	if (d->rehash_index != -1)
-//	{
-//	    single_rehash_dict(d);
-//	}
 	if (exist_key(d, key) == false)
 	{
 		printf("Key is not exist.\n");
@@ -580,128 +457,6 @@ bool delete_dict_key(dict *d, char *key, int type)
 		}
 		head = head->next;
 	}
-	if(d->rehash_index != -1)
-	{
-		key_index = murmurhash(key, (uint32_t)strlen(key), MMHASH_SEED);
-		key_index = key_index & d->hash_table[1].size_mask;
-		pre = d->hash_table[1].table[key_index];
-		head = pre->next;
-		if (head == NULL && strcmp(key, pre->key) == 0)
-		{
-			switch (type) {
-			case INTTYPE:
-			{
-				free(pre->key);
-				pre->key = NULL;
-				free(pre);
-				pre = NULL;
-				return true;
-			}
-			    break;
-			case DECIMALTYPE:
-			{
-				free(pre->key);
-				pre->key = NULL;
-				free(pre);
-				pre = NULL;
-				return true;
-			}
-			    break;
-			case STRINGTYPE:
-			{
-				free(pre->key);
-				pre->key = NULL;
-				free(pre->value.string_value);
-				pre->value.string_value = NULL;
-				free(pre);
-				pre = NULL;
-				return true;
-			}
-			    break;
-			case OBJECTTYPE:
-			{
-				free(pre->value.object_value);
-				pre->value.object_value = NULL;
-				free(pre->key);
-				pre->key = NULL;
-				free(pre);
-				pre = NULL;
-				return true;
-			}
-			    break;
-			default:
-			{
-			    printf("value type is error.\n");
-			    return false;
-			}
-			    break;
-			}
-		}
-		else if (head == NULL && strcmp(key, pre->key) != 0)
-		{
-			printf("Key is not exist.\n");
-			return false;
-		}
-		while(head)
-		{
-			if(strcmp(key, head->key) == 0)
-			{
-				switch (type) {
-				case INTTYPE:
-				{
-					pre->next = head->next;
-					free(head->key);
-					head->key = NULL;
-					free(head);
-					head = NULL;
-					return true;
-				}
-				    break;
-				case DECIMALTYPE:
-				{
-					pre->next = head->next;
-					free(head->key);
-					head->key = NULL;
-					free(head);
-					head = NULL;
-					return true;
-				}
-				    break;
-				case STRINGTYPE:
-				{
-					pre->next = head->next;
-					free(head->value.string_value);
-					head->value.string_value = NULL;
-					free(head->key);
-					head->key = NULL;
-					free(head);
-					head = NULL;
-					return true;
-				}
-				    break;
-				case OBJECTTYPE:
-				{
-					pre->next = head->next;
-					free(head->value.object_value);
-					head->value.object_value = NULL;
-					free(head->key);
-					head->key = NULL;
-					free(head);
-					head = NULL;
-					return true;
-				}
-				    break;
-				default:
-				{
-				    printf("value type is error.\n");
-				    return false;
-				}
-				    break;
-				}
-			}
-			head = head->next;
-		}
-	}
 	return false;
 }
 
@@ -712,10 +467,6 @@ bool release_dict(dict *d)
 	dictEntry *tail = NULL;
 	dictEntry *pre = NULL;
 
-//	if (d->rehash_index != -1)
-//	{
-//	    single_rehash_dict(d);
-//	}
 	for (count = 0; count < d->hash_table[0].size; count ++)
 	{
 		head = d->hash_table[0].table[count];
@@ -760,55 +511,6 @@ bool release_dict(dict *d)
 
 	free(d->hash_table[0].table);
 	d->hash_table[0].table = NULL;
-
-	if (d->rehash_index != -1)
-	{
-		for (count = 0; count < d->hash_table[1].size; count ++)
-		{
-			head = d->hash_table[1].table[count];
-			while (head)
-			{
-				tail = head;
-				while(tail->next)
-				{
-					if (tail->next->next == NULL)
-					{
-						pre = tail;
-					}
-					tail = tail->next;
-				}
-				if (head->next == NULL)
-				{
-					free(d->hash_table[1].table[count]->key);
-					d->hash_table[1].table[count]->key = NULL;
-					if (d->hash_table[1].table[count]->value_type == STRINGTYPE)
-					{
-						free(d->hash_table[1].table[count]->value.string_value);
-						d->hash_table[1].table[count]->value.string_value = NULL;
-					}
-					free(d->hash_table[1].table[count] );
-					d->hash_table[1].table[count] = NULL;
-					d->hash_table[1].used --;
-					break;
-				}
-				pre->next = NULL;
-				free(tail->key);
-				tail->key = NULL;
-				if (tail->value_type == STRINGTYPE)
-				{
-					free(tail->value.string_value);
-					tail->value.string_value = NULL;
-				}
-				free(tail);
-				tail = NULL;
-				d->hash_table[1].used --;
-			}
-		}
-
-		free(d->hash_table[1].table);
-		d->hash_table[1].table = NULL;
-
-	}
 	free(d);
 	d = NULL;
 
@@ -825,10 +527,6 @@ bool exist_key(dict *d, char *key)
 	    return false;
 	}
 
-	//    if (d->rehash_index != -1)
-	//    {
-	//	single_rehash_dict(d);
-	//    }
 	key_index = murmurhash(key,  (uint32_t) strlen(key), MMHASH_SEED);
 	key_index = key_index & d->hash_table[0].size_mask;
 	head = d->hash_table[0].table[key_index];
@@ -839,21 +537,6 @@ bool exist_key(dict *d, char *key)
 		return true;
 	}
 	head = head->next;
-	}
-	if(d->rehash_index != -1)
-	{
-	head = NULL;
-	key_index = murmurhash(key,  (uint32_t) strlen(key), MMHASH_SEED);
-	key_index = key_index & d->hash_table[1].size_mask;
-	head = d->hash_table[1].table[key_index];
-	while(head)
-	{
-	    if(strcmp(key, head->key) == 0)
-	    {
-		    return true;
-	    }
-	    head = head->next;
-	}
 	}
 	return false;
 }
@@ -945,6 +628,10 @@ bool single_rehash_dict(dict *d)
     free(d->hash_table[0].table);
     d->hash_table[0].table = NULL;
     d->hash_table[0].table = (dictEntry **)calloc(d->hash_table[1].size, sizeof(dictEntry*));
+    if (!d->hash_table[0].table)
+    {
+	    return false;
+    }
     for (count = 0; count < d->hash_table[1].size; count ++)
     {
 	    if (d->hash_table[1].table[count] == NULL)
@@ -991,26 +678,63 @@ dictEntry *fetch_dictEntry(dict *d, char *key)
 		}
 		head = head->next;
 	}
-	if(d->rehash_index != -1)
-	{
-		key_index = murmurhash(key, (uint32_t)strlen(key), MMHASH_SEED);
-		key_index = key_index & d->hash_table[1].size_mask;
-		head = d->hash_table[1].table[key_index];
-		while(head)
-		{
-			if(strcmp(key, head->key) == 0)
-			{
-				return head;
-			}
-			head = head->next;
-		}
-	}
 	return NULL;
 
 }
 
 
+void print_dict(dict *d)
+{
+	dictEntry *de = NULL;
+	int index = 0;
 
+	while(index < d->hash_table[0].size)
+	{
+		de = d->hash_table[0].table[index];
+		while(de)
+		{
+			switch (de->value_type) {
+			case BOOL_FALSE:
+			{
+				printf("index:%d\tkey:%s\tvalue:%s\n", index, de->key, de->value.bool_value == true?"TRUE":"FALSE");
+			}
+				break;
+			case BOOL_TRUE:
+			{
+				printf("index:%d\tkey:%s\tvalue:%s\n", index, de->key, de->value.bool_value == true?"TRUE":"FALSE");
+			}
+				break;
+			case INTTYPE:
+			{
+				printf("index:%d\tkey:%s\tvalue:%ld\n", index, de->key, de->value.num_value);
+			}
+				break;
+			case DECIMALTYPE:
+			{
+				printf("index:%d\tkey:%s\tvalue:%lf\n", index, de->key, de->value.decimal_value);
+			}
+				break;
+			case STRINGTYPE:
+			{
+				printf("index:%d\tkey:%s\tvalue:%s\n", index, de->key, de->value.string_value);
+			}
+				break;
+			case OBJECTTYPE:
+			{
+				printf("index:%d\tkey:%s\tvalue:%s\n", index, de->key, (char *)de->value.object_value);
+			}
+				break;
+			default:
+				break;
+			}
+			de = de->next;
+		}
+		index ++;
+		de = NULL;
+	}
+
+
+}
 
 
 

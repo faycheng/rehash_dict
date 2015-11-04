@@ -24,7 +24,7 @@ typedef struct dictEntry{
     char *key;
     int value_type;
     union {
-	bool *bool_value;
+	bool bool_value;
 	char *string_value;
 	long num_value;
 	double decimal_value;
@@ -41,6 +41,11 @@ typedef struct dictHT{
     int used;
 }dictHT;
 
+typedef struct dictError{
+	char loction[128];
+	char message[128];
+}dictError;
+
 typedef struct dict {
     dictHT hash_table[2];
     int rehash_index;
@@ -53,6 +58,8 @@ typedef struct dictIterator{
     dictEntry *entry, *next_entry;
 }dictIterator;
 
+
+
 dict *create_dic(void);
 bool add_dict(dict *d, char *key, int type, ...);
 bool replace_dict_value(dict *d, char *key, int type, ...);
@@ -63,7 +70,7 @@ bool single_rehash_dict(dict *d);
 bool exist_key(dict *d, char *key);
 dictEntry *fetch_dictEntry(dict *d, char *key);
 int growth_size(int used);
-
+void print_dict(dict *d);
 
 
 
