@@ -33,18 +33,7 @@ int main(void)
 		   continue;
 	   }
 	   printf("count:%ld\tsize:%d\t\t\tkey:%s\n", count++, d->hash_table[0].used, key);
-//	   for (index = 0; index < d->hash_table[0].size; index ++)
-//	   {
-//		   if (d->hash_table[0].table[index] != NULL)
-//		   {
-//			   dictEntry *tm = d->hash_table[0].table[index];
-//			   while(tm)
-//			   {
-//				   printf("######index:%d\tkey:%s\n", index, tm->key);
-//				   tm = tm->next;
-//			   }
-//		   }
-//	   }
+
 	   free(key);
 	   free(key_index);
 	   key = NULL;

@@ -10,18 +10,21 @@
 #include <stdint.h>
 #include "murmurhash.h"
 
-#define DICT_HT_INIT_SIZE 4
-#define MMHASH_SEED 1024
-#define INTTYPE 0
-#define DECIMALTYPE 1
-#define STRINGTYPE 2
-#define OBJECTTYPE 3
+#define DICT_HT_INIT_SIZE		4
+#define MMHASH_SEED		1024
+#define BOOL_FALSE			0
+#define BOOL_TRUE			1
+#define INTTYPE				2
+#define DECIMALTYPE			3
+#define STRINGTYPE			4
+#define OBJECTTYPE			5
 
 
 typedef struct dictEntry{
     char *key;
     int value_type;
     union {
+	bool *bool_value;
 	char *string_value;
 	long num_value;
 	double decimal_value;
@@ -59,7 +62,7 @@ bool release_dict(dict *d);
 bool single_rehash_dict(dict *d);
 bool exist_key(dict *d, char *key);
 dictEntry *fetch_dictEntry(dict *d, char *key);
-
+int growth_size(int used);
 
 
 

@@ -1,43 +1,4 @@
 #include "rehash_dict.h"
-/*
-typedef struct dictEntry{
-    void *key;
-    union {
-	void *value;
-	long *value_int;
-	double *value_double;
-    } val;
-    struct dictEntry *next;
-}dictEntry;
-
-typedef struct dictType{
-    unsigned int (*murmur_hash)(void *key);
-    void *(*key_copy)(void *private_data, void *key);
-    void *(*value_copy)(void *private_data, void *obj);  //obj ???
-    int (*key_compare)(void *private_data, void *key1, void *key2);
-    void (*key_destory)(void *private_data, void *key);
-    void (*value_destory)(void *private_data, void *obj);
-}dictType;
-
-typedef struct dictHT{
-    dictEntry **table;
-    unsigned long size;
-    unsigned long size_mask;
-    unsigned long used;
-}dictHT;
-
-typedef struct dict {
-    dictHT hash_table[2];
-    int rehash_index;
-    int iterators;
-}dict;
-
-typedef struct dictIterator{
-    dict *d;
-    int table, index, safe;
-    dictEntry *entry, *next_entry;
-}dictIterator;
- * */
 
 dict *create_dic(void)
 {
@@ -101,6 +62,16 @@ bool add_dict(dict *d, char *key, int type, ...)
 	    d->rehash_index = 0;
 	    single_rehash_dict(d);
 	    switch (type) {
+	    case BOOL_FALSE:
+	    {
+		    add_dict(d, key, type);
+	    }
+		    break;
+	    case BOOL_TRUE:
+	    {
+		    add_dict(d, key, type);
+	    }
+		    break;
 	    case INTTYPE:
 	    {
 		    add_dict(d, key, type, va_arg(value_ptr, long));
@@ -137,6 +108,18 @@ bool add_dict(dict *d, char *key, int type, ...)
 	    de->key = (char *)calloc(strlen(key) + 1, sizeof(char));
 	    memcpy(de->key, key, strlen(key));
 	    switch (type) {
+	    case BOOL_FALSE:
+	    {
+		    de->value_type = BOOL_FALSE;
+		    de->value.bool_value = false;
+	    }
+		break;
+	    case BOOL_TRUE:
+	    {
+		    de->value_type = BOOL_TRUE;
+		    de->value.num_value = true;
+	    }
+		break;
 	    case INTTYPE:
 	    {
 		    de->value_type = INTTYPE;
@@ -348,11 +331,6 @@ bool fetch_dict_value(dict *d, char *key, int type, ...)
 	char *string_value = NULL;
 	double *double_value = 0;
 	void *object_value = NULL;
-
-//	if (d->rehash_index != -1)
-//	{
-//	    single_rehash_dict(d);
-//	}
 	if (exist_key(d, key) == false)
 	{
 		printf("Key is not exist.\n");
@@ -459,7 +437,6 @@ bool fetch_dict_value(dict *d, char *key, int type, ...)
 
 int growth_size(int used)
 {
-    int size = 0;
     int base_number = 1;
 
     while(used * 2 > base_number )
@@ -833,7 +810,7 @@ bool release_dict(dict *d)
 
 	}
 	free(d);
-	d == NULL;
+	d = NULL;
 
 	return true;
 }
@@ -843,7 +820,7 @@ bool exist_key(dict *d, char *key)
 	uint32_t key_index = 0;
 	dictEntry *head = NULL;
 
-	if (d->hash_table[0].used == 0 && d->hash_table[1].used == 0)
+	if (d->hash_table[0].used == 0)
 	{
 	    return false;
 	}
@@ -939,7 +916,6 @@ bool exist_key(dict *d, char *key)
 bool single_rehash_dict(dict *d)
 {
     dictEntry *node = NULL;
-    dictEntry *tail = NULL;
     int dict_entry_index = 0;
     int count = 0;
     uint32_t key_index = 0;
